@@ -1,0 +1,65 @@
+# =====================
+# Python cache
+# =====================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =====================
+# Virtual environment
+# =====================
+venv/
+env/
+.venv/
+.ENV/
+
+# =====================
+# Environment variables
+# =====================
+.env
+.env.*
+
+# =====================
+# Build / Distribution
+# =====================
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =====================
+# Logs
+# =====================
+*.log
+
+# =====================
+# Jupyter Notebook
+# =====================
+.ipynb_checkpoints/
+
+# =====================
+# IDE / Editor
+# =====================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =====================
+# OS files
+# =====================
+.DS_Store
+Thumbs.db
+
+# =====================
+# Testing / Coverage
+# =====================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =====================
+# Database (example)
+# =====================
+*.sqlite3
+*.db
