@@ -11,7 +11,8 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageCon
 from linebot.v3.messaging import MessagingApiBlob
 
 
-from ocr import show_list,delect_image
+from app.ocr import show_list, delect_image
+
 from linebot.v3.messaging import (
     ApiClient, 
     MessagingApi, 
