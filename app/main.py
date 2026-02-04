@@ -11,7 +11,7 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageCon
 from linebot.v3.messaging import MessagingApiBlob
 
 
-from ocr import analyze_slip, delect_image
+from app.ocr import analyze_slip, delect_image
 
 from linebot.v3.messaging import (
     ApiClient, 
@@ -22,7 +22,7 @@ from linebot.v3.messaging import (
     # FlexMessage, 
     # Emoji,
 )
-from response_message import response_message
+from app.response_message import response_message
 
 
 app = FastAPI()
