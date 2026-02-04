@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pytesseract
+opencv-python-headless
+numpy
+line-bot-sdk

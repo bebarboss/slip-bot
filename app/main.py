@@ -10,8 +10,8 @@ from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageContent
 from linebot.v3.messaging import MessagingApiBlob
 
-from ocr import patment_ocr,delect_image
 
+from ocr import show_list,delect_image
 from linebot.v3.messaging import (
     ApiClient, 
     MessagingApi, 
@@ -50,6 +50,59 @@ async def callback(request: Request, x_line_signature: str = Header(None)):
 
     return 'OK'
 
+def build_receipt_flex(result, username):
+    return {
+        "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": "https://i.imgur.com/6Z8FQYk.png",  # ใส่รูปสลิป หรือ default
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "text",
+                    "text": "Receipt Summary",
+                    "weight": "bold",
+                    "size": "xl"
+                },
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "xs",
+                    "contents": [
+                        {"type": "text", "text": f"Method: {result['payment_method']}", "size": "sm"},
+                        {"type": "text", "text": f"Amount: ฿{result['Amount']}", "size": "sm", "color": "#1DB446"},
+                        {"type": "text", "text": f"Date: {result['Date']} {result['Time']}", "size": "sm"},
+                        {"type": "text", "text": f"ID: {result['ID']}", "size": "xs", "color": "#AAAAAA"},
+                        {"type": "text", "text": f"By: {username}", "size": "xs", "color": "#999999"}
+                    ]
+                }
+            ]
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "action": {
+                        "type": "postback",
+                        "label": "Confirm",
+                        "data": "action=confirm"
+                    }
+                }
+            ]
+        }
+    }
+
+
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event: MessageEvent):
     with ApiClient(configuration) as api_client:
@@ -75,16 +128,15 @@ def handle_image(event: MessageEvent):
         file_path = os.path.join(UPLOAD_FOLDER, f"{message_id}.jpg")
         with open(file_path, "wb") as f:
             f.write(content)
-    result = patment_ocr(file_path)
+    result = show_list(file_path)
     if isinstance(result, dict):
-        reply_text = (f"Payment Method: {result['Payment']}\n"
-                      f"Store: {result['Store']}\n"
-                      f"ID: {result['id']}\n"
+        reply_text = (f"Payment Method: {result['payment_method']}\n"
+                      f"ID: {result['ID']}\n"
                       f"Date: {result['Date']}\n"
                       f"Time: {result['Time']}\n"
                       f"Amount: {result['Amount']}\n"
-                      f"Address: {result['address']}\n"
                       f"Who : {line_bot_api.get_profile(event.source.user_id).display_name}")
+    
     else: 
         reply_text = f"Payment Method: {result}"
 

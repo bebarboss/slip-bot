@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+build/
+dist/
+.git/
+.vscode/
+*.swp
+*.swo
+
+# Ignore local image folder if you don't want to copy large files
+app/images/

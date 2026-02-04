@@ -1,67 +1,93 @@
-import easyocr
+import pytesseract
 import os
 import cv2
 import re
+import numpy as np
 
-reader = easyocr.Reader(['en','th'], gpu=True, verbose=False)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 def preprocess_fast(image_path):
     img = cv2.imread(image_path)
-    h, w = img.shape[:2]
-    img = cv2.resize(img, (w//2, h//2))
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return gray
+    _, thresh = cv2.threshold(
+        gray, 0, 255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU
+    )
+
+    return thresh
+
 
 def fast_ocr(image_path):
     img = preprocess_fast(image_path)
-    return reader.readtext(img, detail=0, paragraph=False)
 
-def list_seven(image_path):
-    text = fast_ocr(image_path)
-    raw_text = ' '.join(text)
-    date_match = re.search(r'\d{1,2}\s*\S+\.\s*\d{4}', raw_text)
-    time_match = re.search(r'\d{2}:\d{2}:\d{2}', raw_text)
-    date = date_match.group() if date_match else None
-    time = time_match.group() if time_match else None
-    list_ocr = {
-        'id' : text[15],
-        'Date' : date,
-        'Time' : time,
-        'Payment' : text[0],
-        'Store' : text[1],
-        'Amount' : text[2],
-        'address' : text[25]
-    }
-    return list_ocr
+    config = r'--oem 3 --psm 6'
+    text = pytesseract.image_to_string(
+        img,
+        lang='tha+eng',
+        config=config
+    )
 
-def list_lotus(image_path):
-    text = fast_ocr(image_path)
-    raw_text = ' '.join(text)
-    date_match = re.search(r'\d{1,2}\s*\S+\.\s*\d{4}', raw_text)
-    time_match = re.search(r'\d{2}:\d{2}:\d{2}', raw_text)
-    date = date_match.group() if date_match else None
-    time = time_match.group() if time_match else None
-    match = re.findall(r'\d+(?:,\d{3})*(?:\.\d{2})', raw_text)
-    amount = max(match, key=lambda x: float(x.replace(',', '')))
-    list_ocr = {
-        'id' : text[17],
-        'Date' : date,
-        'Time' : time,
-        'Payment' : text[0],
-        'Store' : text[1],
-        'Amount' : amount,
-        'address' : text[28]
-    }
-    return list_ocr
+    return [t.strip() for t in text.split('\n') if t.strip()]
 
 def delect_image(image_path):
     os.remove(image_path)
 
-def patment_ocr(image_path):
-    text = fast_ocr(image_path)
-    if text[0] == "โลตัส":
-        return list_lotus(image_path)
-    elif text[1] == "เซเว่น อีเลฟเว่น" or text[0] == "TrueMoney":
-        return list_seven(image_path)
-    else:
-        return list_seven(image_path)
+
+def payment_ocr(image_path):
+    raw_text = ' '.join(fast_ocr(image_path))
+    text = raw_text.lower()
+
+    payment_keywords = {
+        'scb': ['SCB', 'ไทยพาณิชย์', 'siam commercial'],
+        'truemoney': [' truemoney', 'true money', 'wallet','true'],
+    }
+
+    for payment, keywords in payment_keywords.items():
+        for kw in keywords:
+            if kw in text:
+                return payment
+
+    return 'unknown'
+
+def clean_text(text):
+    return (text
+            .lower()
+            .replace('฿', '฿ ')
+            .replace('b ', '฿ ')
+            .replace('8 ', '฿ ')
+            .replace('o', '0')
+            .replace(',', '')
+            )
+
+def amount(text):
+    text = clean_text(text.lower())
+
+    patterns = [
+        r'ยอดชำระทั้งหมด\s*฿?\s*([\d,]+\.\d{2})',
+        r'จำนวนเงิน\s*([\d,]+\.\d{2})',
+        r'amount\s*([\d,]+\.\d{2})',
+        r'฿\s*([\d,]+\.\d{2})',
+    ]
+
+    for p in patterns:
+        m = re.search(p, text)
+        if m:
+            return float(m.group(1).replace(',', ''))
+    return None
+
+
+def show_list(image_path):
+    text_list = fast_ocr(image_path)
+    raw_text = ' '.join(text_list)
+
+    date_match = re.search(r'\d{1,2}\s*\S+\.\s*\d{4}', raw_text)
+    time_match = re.search(r'\d{2}:\d{2}:\d{2}', raw_text)
+    id_match = re.search(r'(?i)(?:id|เลขที่(?:ธ)?รายการ)\s*[:\-]?\s*([A-Z0-9\s]{10,})',raw_text)
+
+    return {
+        'payment_method': payment_ocr(image_path),
+        'ID': id_match.group(1) if id_match else None,
+        'Amount': amount(raw_text),
+        'Date': date_match.group() if date_match else None,
+        'Time': time_match.group() if time_match else None,
+    }
