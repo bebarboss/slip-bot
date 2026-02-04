@@ -22,7 +22,8 @@ from linebot.v3.messaging import (
     # FlexMessage, 
     # Emoji,
 )
-from response_message import response_message 
+from app.response_message import response_message
+
 
 app = FastAPI()
 
