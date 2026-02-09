@@ -4,6 +4,7 @@ import os
 
 from scb import scb_data
 from true_money import true_money_data
+from truemoney import truemoney_data
 
 LOGO_DIR = "logos"
 ORB_FEATURES = 1000
@@ -67,14 +68,14 @@ def payment_method(image_bytes: bytes):
         return scb_data(image_bytes)
     
     elif logo in ['TRUE-MONEY']:
-        return 'truemoney'
+        return true_money_data(image_bytes)
+        
     
     elif logo in ['TRUEMONEY']:
-        return true_money_data(image_bytes)
+        return truemoney_data(image_bytes)
     
     elif logo in ['MAKE','KMAKE']:
         return 'make'
     
     else:
         return 'unknown'
-    
