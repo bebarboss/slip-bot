@@ -11,6 +11,9 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageCon
 from linebot.v3.messaging import MessagingApiBlob
 
 from postgrest.exceptions import APIError
+from flex_message import receipt_flex
+from linebot.v3.messaging import TextMessage
+
 
 from ocr import payment_method
 
@@ -122,6 +125,8 @@ def handle_image(event: MessageEvent):
                  "sender": result["sender"], 
                  "receiver": result["receiver"], 
                  "amount": result["amount"], }).execute()
+            
+            reply_text = receipt_flex(result, profile.display_name)
 
             reply_text = (
                 f"Payment Method: {result['payment_method']}\n"

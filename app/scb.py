@@ -59,7 +59,7 @@ def detect_refid(text):
     tokens = text.split()
     for i, t in enumerate(tokens):
         if t in {"รหัสอ้างอิง:", "|d:","Id"} and i + 3 < len(tokens):
-            return f"{tokens[i+1]}"
+            return f"{tokens[i+1]}".upper()
     return None
 
 def detect_sender(text):
