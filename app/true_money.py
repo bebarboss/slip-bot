@@ -17,9 +17,9 @@ def decode_image(image_bytes: bytes):
 def split_image_dynamic(img):
     h, w, _ = img.shape
     return {
-        "header": img[int(h*0.15):int(h*0.5), :],
-        "body": img[int(h*0.4):int(h*0.6), :],
-        "footer": img[int(h*0.5):int(h*0.7), :]
+        "header": img[int(h*0.1):int(h*0.3), :],
+        "body": img[int(h*0.35):int(h*0.65), :],
+        "footer": img[int(h*0.5):int(h*0.9), :]
     }
 
 def ocr_zone(img):
@@ -50,29 +50,29 @@ def detect_date(text):
     return datetime(year, month, int(day)).strftime("%Y-%m-%d")
 
 def detect_time(text):
-    match = re.search(r'\d{2}:\d{2}', text)
+    match = re.search(r'\d{2}:\d{2}:\d{2}', text)
     if not match:
         return None
-    return datetime.strptime(match.group(), "%H:%M").strftime("%H:%M:%S")
+    return datetime.strptime(match.group(), "%H:%M:%S").strftime("%H:%M:%S")
 
 def detect_refid(text):
     tokens = text.split()
     for i, t in enumerate(tokens):
-        if t in {"รหัสอ้างอิง:", "|d:","Id"} and i + 3 < len(tokens):
-            return f"{tokens[i+1]}"
+        if t in {"หมายเลขการสั่งซื้อ"} and i + 2 < len(tokens):
+            return f"{tokens[i+1]}{tokens[i+2]}"
     return None
 
 def detect_sender(text):
     tokens = text.split()
     for i, t in enumerate(tokens):
-        if t in {"จาก", "from"} and i + 3 < len(tokens):
-            return f"{tokens[i+1]}{tokens[i+2]} {tokens[i+3]}"
+        if t in {"ช่องทางการชำระเงิน", "from"} and i + 3 < len(tokens):
+            return f"{tokens[i+1]}{tokens[i+2]}"
     return None
 
 def detect_receiver(text):
     tokens = text.split()
     for i, t in enumerate(tokens):
-        if t in {"ไปยัง", "to"} and i + 2 < len(tokens):
+        if t in {"รายละเอียดสินค้า"} and i + 2 < len(tokens):
             return f"{tokens[i+1]} {tokens[i+2]}".upper()
     return None
 
@@ -80,7 +80,7 @@ def detect_amount(text):
     match = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2}))', text)
     return match.group() if match else None
 
-def scb_data(image_bytes: bytes):
+def true_money_data(image_bytes: bytes):
     img = decode_image(image_bytes)
     zones = split_image_dynamic(img)
     with ThreadPoolExecutor(max_workers=3) as executor:
@@ -90,11 +90,11 @@ def scb_data(image_bytes: bytes):
         }
         ocr = {futures[f]: f.result() for f in as_completed(futures)}
     return {
-        "date": detect_date(ocr["header"]),
-        "time": detect_time(ocr["header"]),
-        "payment_method": "SCB",
-        "refid": detect_refid(ocr["header"]),
-        "sender": detect_sender(ocr["header"]),
-        "receiver": detect_receiver(ocr["body"]),
-        "amount": detect_amount(ocr["footer"])
+        "date": detect_date(ocr["body"]),
+        "time": detect_time(ocr["body"]),
+        "payment_method": "TrueMoney Wallet",
+        "refid": detect_refid(ocr["footer"]),
+        "sender": detect_sender(ocr["body"]),
+        "receiver": detect_receiver(ocr["footer"]),
+        "amount": detect_amount(ocr["header"])
     }
