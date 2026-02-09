@@ -11,7 +11,7 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageCon
 from linebot.v3.messaging import MessagingApiBlob
 
 
-from ocr import analyze_slip, delect_image
+from ocr import payment_method
 
 from linebot.v3.messaging import (
     ApiClient, 
@@ -75,16 +75,23 @@ def handle_image(event: MessageEvent):
         blob_api = MessagingApiBlob(api_client)
         content = blob_api.get_message_content(message_id)
         line_bot_api = MessagingApi(api_client)
+
         file_path = os.path.join(UPLOAD_FOLDER, f"{message_id}.jpg")
         with open(file_path, "wb") as f:
             f.write(content)
-    result = analyze_slip(file_path)
+
+    with open(file_path, "rb") as f:
+        image_bytes = f.read()
+
+    result = payment_method(image_bytes)
     if isinstance(result, dict):
         reply_text = (f"Payment Method: {result['payment_method']}\n"
-                      f"ID: {result['ID']}\n"
-                      f"Date: {result['Date']}\n"
-                      f"Time: {result['Time']}\n"
-                      f"Amount: {result['Amount']}\n"
+                      f"ID: {result['refid']}\n"
+                      f"Date: {result['date']}\n"
+                      f"Time: {result['time']}\n"
+                      f"Sender: {result['sender']}\n"
+                      f"Amount: {result['amount']}\n"
+                      f"Receiver: {result['receiver']}\n"
                       f"Who : {line_bot_api.get_profile(event.source.user_id).display_name}")
     
     else: 
@@ -96,8 +103,8 @@ def handle_image(event: MessageEvent):
                 messages=[TextMessage(text=reply_text)]
             )
         )
-    
-    delect_image(file_path)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0")
+
+

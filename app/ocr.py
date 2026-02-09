@@ -68,7 +68,7 @@ def payment_method(image_bytes: bytes):
     elif logo in ['TRUEMONEY','TRUE-MONEY']:
         return 'truemoney'
     
-    elif logo in ['MAKE']:
+    elif logo in ['MAKE','KMAKE']:
         return 'make'
     
     else:

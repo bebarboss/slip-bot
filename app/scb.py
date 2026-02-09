@@ -89,6 +89,7 @@ def scb_data(image_bytes: bytes):
     return {
         "date": detect_date(ocr["header"]),
         "time": detect_time(ocr["header"]),
+        "payment_method": "SCB",
         "refid": detect_refid(ocr["header"]),
         "sender": detect_sender(ocr["header"]),
         "receiver": detect_receiver(ocr["body"]),
