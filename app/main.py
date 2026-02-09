@@ -10,6 +10,7 @@ from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent,ImageMessageContent
 from linebot.v3.messaging import MessagingApiBlob
 
+from postgrest.exceptions import APIError
 
 from ocr import payment_method
 
@@ -23,6 +24,14 @@ from linebot.v3.messaging import (
     # Emoji,
 )
 from response_message import response_message
+
+load_dotenv(override=True)
+
+from supabase import create_client
+supabase = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_KEY")
+)
 
 
 app = FastAPI()
@@ -84,25 +93,53 @@ def handle_image(event: MessageEvent):
         image_bytes = f.read()
 
     result = payment_method(image_bytes)
-    if isinstance(result, dict):
-        reply_text = (f"Payment Method: {result['payment_method']}\n"
-                      f"ID: {result['refid']}\n"
-                      f"Date: {result['date']}\n"
-                      f"Time: {result['time']}\n"
-                      f"Sender: {result['sender']}\n"
-                      f"Amount: {result['amount']}\n"
-                      f"Receiver: {result['receiver']}\n"
-                      f"Who : {line_bot_api.get_profile(event.source.user_id).display_name}")
-    
-    else: 
+
+    if not isinstance(result, dict):
         reply_text = f"Payment Method: {result}"
+    else:
+        profile = line_bot_api.get_profile(event.source.user_id)
+        exists = (
+            supabase.table("payment_transection")
+            .select("id")
+            .eq("refid", result["refid"])
+            .limit(1)
+            .execute()
+        )
+
+        if exists.data:
+            reply_text = (
+                "Duplicate Slip\n"
+                f"Ref ID: {result['refid']}"
+            )
+        else:
+            supabase.table("payment_transection").insert(
+                {"user": profile.display_name, 
+                 "user_id": event.source.user_id, 
+                 "payment_method": result["payment_method"], 
+                 "refid": result["refid"], 
+                 "pay_date": result["date"], 
+                 "pay_time": result["time"], 
+                 "sender": result["sender"], 
+                 "receiver": result["receiver"], 
+                 "amount": result["amount"], }).execute()
+
+            reply_text = (
+                f"Payment Method: {result['payment_method']}\n"
+                f"ID: {result['refid']}\n"
+                f"Time: {result['time']}\n"
+                f"Sender: {result['sender']}\n"
+                f"Amount: {result['amount']}\n"
+                f"Receiver: {result['receiver']}\n"
+                f"Who: {profile.display_name}"
+            )
 
     line_bot_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_text)]
-            )
+        ReplyMessageRequest(
+            reply_token=event.reply_token,
+            messages=[TextMessage(text=reply_text)]
         )
+    )
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0")
