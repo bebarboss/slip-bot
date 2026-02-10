@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import os
 
-from scb import scb_data
-from true_money import true_money_data
-from truemoney import truemoney_data
+from app.scb import scb_data
+from app.true_money import true_money_data
+from app.truemoney import truemoney_data
 
 LOGO_DIR = "logos"
 ORB_FEATURES = 1000
