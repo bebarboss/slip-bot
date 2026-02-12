@@ -15,7 +15,7 @@ from flex_message import receipt_flex
 from linebot.v3.messaging import TextMessage
 
 
-from app.ocr import payment_method
+from ocr import payment_method
 
 from linebot.v3.messaging import (
     ApiClient, 
