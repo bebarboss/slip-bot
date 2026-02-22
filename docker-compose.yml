@@ -1,15 +1,28 @@
-version: "3.8"
+version: "3.9"
 
 services:
-  web:
-    build: .
+  fastapi:
+    build: ./app
+    container_name: fastapi_app
     ports:
       - "8000:8000"
+    networks:
+      - app-network
     env_file:
       - .env
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok_tunnel
+    depends_on:
+      - fastapi
+    command: http fastapi:8000
     environment:
-      - ACCESS_TOKEN
-      - CHANNEL_SECRET
-    volumes:
-      - ./app/images:/usr/src/app/app/images
-    restart: unless-stopped
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    networks:
+      - app-network
+
+networks:
+  app-network:
